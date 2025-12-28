@@ -673,10 +673,24 @@ def get_leaderboard(run_id: Optional[int] = None, start_month: Optional[str] = N
         if not trades:
             continue
         
-        cumulative = 100.0
+        # Group trades by run_id to calculate returns per run separately
+        trades_by_run = {}
         for t in trades:
-            allocation = t.allocation / 100
-            cumulative *= (1 + t.return_pct / 100 * allocation)
+            if t.run_id not in trades_by_run:
+                trades_by_run[t.run_id] = []
+            trades_by_run[t.run_id].append(t)
+        
+        # Calculate cumulative return for each run
+        run_returns = []
+        for rid, run_trades in trades_by_run.items():
+            cumulative = 100.0
+            for t in run_trades:
+                allocation = t.allocation / 100
+                cumulative *= (1 + t.return_pct / 100 * allocation)
+            run_returns.append(((cumulative / 100) - 1) * 100)
+        
+        # Average across runs (or single run if run_id specified)
+        avg_total_return = np.mean(run_returns) if run_returns else 0
         
         returns = [t.return_pct for t in trades]
         sharpe = np.mean(returns) / np.std(returns) if len(returns) > 1 and np.std(returns) > 0 else 0
@@ -685,7 +699,7 @@ def get_leaderboard(run_id: Optional[int] = None, start_month: Optional[str] = N
             'agent_id': agent.id,
             'name': agent.name,
             'personality': agent.personality,
-            'total_return': ((cumulative / 100) - 1) * 100,
+            'total_return': avg_total_return,
             'sharpe_ratio': sharpe * np.sqrt(12),  # Annualized Sharpe
             'total_trades': len(trades),
             'win_rate': sum(1 for r in returns if r > 0) / len(returns) * 100 if returns else 0

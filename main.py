@@ -5,7 +5,7 @@ FastAPI server with backtesting logic and yfinance market data.
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 import yfinance as yf
@@ -472,7 +472,14 @@ class BacktestEngine:
 
 @app.get("/")
 def root():
-    return {"message": "AgenticTraders API", "version": "1.0"}
+    """Serve the Research Lab HTML page"""
+    return FileResponse("research.html", media_type="text/html")
+
+
+@app.get("/dashboard")
+def dashboard():
+    """Serve the Dashboard HTML page"""
+    return FileResponse("dashboard.html", media_type="text/html")
 
 
 @app.post("/backtest/run")

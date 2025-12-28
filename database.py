@@ -28,7 +28,7 @@ class Trade(Base):
     id = Column(Integer, primary_key=True)
     run_id = Column(Integer, nullable=False, default=1)  # Track different backtest runs
     agent_id = Column(Integer, nullable=False)
-    month = Column(String(20), nullable=False)  # "2020-01"
+    month = Column(String(20), nullable=False)  # "2018-01"
     year = Column(Integer, nullable=False)
     month_num = Column(Integer, nullable=False)
     

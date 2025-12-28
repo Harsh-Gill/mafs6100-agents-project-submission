@@ -241,6 +241,22 @@
         .positive { color: #00ff88; }
         .negative { color: #ff4d4d; }
         
+        .memory-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border-left: 4px solid #764ba2;
+        }
+        
+        .memory-item .meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+            color: rgba(255,255,255,0.6);
+        }
+        
         .psychology-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -355,9 +371,8 @@
     <nav class="nav-tabs">
         <button class="nav-tab active" onclick="showView('arena')">🏟️ Arena</button>
         <button class="nav-tab" onclick="showView('ablation')">🧪 Ablation Study</button>
-        <button class="nav-tab" onclick="showView('psychology')">🧠 Behavioral Lab</button>
-        <button class="nav-tab" onclick="showView('impact')">👨‍💼 Manager Impact</button>
-        <button class="nav-tab" onclick="window.open('dashboard.html', '_blank')">📊 Classic Dashboard</button>
+        <button class="nav-tab" onclick="showView('analysis')">🧠 Behavioral & Manager Analysis</button>
+        <button class="nav-tab" onclick="window.open('/dashboard', '_blank')">📊 Classic Dashboard</button>
     </nav>
     
     <div class="container">
@@ -367,37 +382,6 @@
                 <h1>🏟️ Experiment Arena</h1>
                 <p>Launch and monitor ablation study experiments</p>
             </header>
-            
-            <div class="run-launcher">
-                <h3>🚀 Launch New Experiment</h3>
-                <div class="input-group" style="justify-content: center; margin-bottom: 15px;">
-                    <label>Period:</label>
-                    <input type="number" id="startYear" value="2018" min="2010" max="2024" style="width: 80px;">
-                    <span>to</span>
-                    <input type="number" id="endYear" value="2023" min="2011" max="2025" style="width: 80px;">
-                    <label style="margin-left: 20px;">Learning Years:</label>
-                    <input type="number" id="learningYears" value="0" min="0" max="5" style="width: 60px;">
-                </div>
-                <div class="toggle-group">
-                    <div class="toggle-item">
-                        <input type="checkbox" id="enableMemory">
-                        <label for="enableMemory">🧠 Memory (RAG)</label>
-                    </div>
-                    <div class="toggle-item">
-                        <input type="checkbox" id="enableReflection">
-                        <label for="enableReflection">📝 Reflection (Notes)</label>
-                    </div>
-                    <div class="toggle-item">
-                        <input type="checkbox" id="enableManager">
-                        <label for="enableManager">👨‍💼 Manager Feedback</label>
-                    </div>
-                </div>
-                <div class="input-group" style="justify-content: center; margin: 15px 0;">
-                    <label>Experiment Name:</label>
-                    <input type="text" id="experimentName" placeholder="e.g., Baseline Run" style="width: 300px;">
-                </div>
-                <button class="btn btn-run" onclick="launchExperiment()">🚀 Launch Experiment</button>
-            </div>
             
             <div class="card">
                 <h2>📋 Experiment History</h2>
@@ -461,94 +445,76 @@
             </div>
         </div>
         
-        <!-- BEHAVIORAL LAB VIEW -->
-        <div id="psychology-view" class="view">
+        <!-- COMBINED BEHAVIORAL & MANAGER ANALYSIS VIEW -->
+        <div id="analysis-view" class="view">
             <header>
-                <h1>🧠 Behavioral Lab</h1>
-                <p>Analyze AI psychology: Do rankings affect risk-taking?</p>
+                <h1>🧠 Behavioral & Manager Analysis</h1>
+                <p>Comparing agent psychology and manager impact across all experiment runs</p>
             </header>
             
-            <div class="card">
-                <h2>Select Run to Analyze</h2>
-                <div class="input-group" style="justify-content: center;">
-                    <label>Run ID:</label>
-                    <select id="psychRunSelect" onchange="loadPsychologyData()">
-                        <option value="">Select a run...</option>
-                    </select>
-                </div>
-            </div>
+            <div id="analysis-loading" class="loading">Loading analysis data for all runs...</div>
             
-            <div id="psychology-results" style="display: none;">
-                <div class="stats-grid" id="psych-summary-stats"></div>
-                
+            <div id="analysis-content" style="display: none;">
+                <!-- Run Summary Cards -->
                 <div class="card">
-                    <h2>🎰 Desperation Index</h2>
+                    <h2>📊 All Experiment Runs Overview</h2>
+                    <div id="runs-overview" class="experiment-grid"></div>
+                </div>
+                
+                <!-- Manager Feedback Summary -->
+                <div class="card">
+                    <h2>👨‍💼 Manager Feedback Summary</h2>
+                    <p style="color: rgba(255,255,255,0.6); margin-bottom: 15px;">
+                        Total feedback given to agents across all runs with Manager enabled
+                    </p>
+                    <div id="feedback-summary"></div>
+                </div>
+                
+                <!-- Desperation Comparison Across Runs -->
+                <div class="card">
+                    <h2>🎰 Desperation Index Comparison</h2>
                     <p style="color: rgba(255,255,255,0.6); margin-bottom: 15px;">
                         Positive = Agent takes MORE risk when losing (gambling for resurrection)<br>
                         Negative = Agent takes LESS risk when losing (playing it safe)
                     </p>
-                    <div class="chart-container">
-                        <canvas id="desperationChart"></canvas>
+                    <div class="chart-container" style="height: 400px;">
+                        <canvas id="desperationComparisonChart"></canvas>
                     </div>
                 </div>
                 
-                <div class="card">
-                    <h2>📊 Risk by Ranking Position</h2>
-                    <div class="chart-container">
-                        <canvas id="riskByRankChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h2>🤖 Agent Psychology Profiles</h2>
-                    <div class="psychology-grid" id="agent-profiles"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- MANAGER IMPACT VIEW -->
-        <div id="impact-view" class="view">
-            <header>
-                <h1>👨‍💼 Manager Impact Analysis</h1>
-                <p>Quantifying the value of oversight: Do agents listen? Do losers recover?</p>
-            </header>
-            
-            <div class="card">
-                <h2>Select Runs to Compare</h2>
-                <div class="run-options">
-                    <div class="input-group">
-                        <label>Baseline Run (No Manager):</label>
-                        <select id="impactBaselineSelect"></select>
-                    </div>
-                    <div class="input-group">
-                        <label>Manager Run (Full System):</label>
-                        <select id="impactManagerSelect"></select>
-                    </div>
-                    <button class="btn btn-primary" onclick="runImpactAnalysis()">Analyze Impact</button>
-                </div>
-            </div>
-            
-            <div id="impact-results" style="display: none;">
-                <div class="stats-grid" id="impact-stats"></div>
-                
+                <!-- Rescue Effect Comparison -->
                 <div class="card">
                     <h2>🚑 The Rescue Effect</h2>
                     <p style="color: rgba(255,255,255,0.6); margin-bottom: 15px;">
-                        Performance of the <strong>Bottom 3 Agents</strong> (from Baseline) when supervised by a Manager.
+                        How the <strong>Bottom 3 Agents</strong> perform with vs without Manager oversight
                     </p>
-                    <div class="chart-container">
-                        <canvas id="rescueChart"></canvas>
+                    <div id="rescue-comparison"></div>
+                </div>
+                
+                <!-- Agent Performance Table -->
+                <div class="card">
+                    <h2>📋 Agent Performance by Run</h2>
+                    <div style="overflow-x: auto;">
+                        <table class="comparison-table" id="agent-performance-table">
+                            <thead>
+                                <tr>
+                                    <th>Agent</th>
+                                    <th>Personality</th>
+                                    <th id="run-headers"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="agent-performance-body"></tbody>
+                        </table>
                     </div>
                 </div>
                 
+                <!-- Compliance Stats -->
                 <div class="card">
-                    <h2>🗣️ Coachability: Feedback Compliance</h2>
+                    <h2>🗣️ Coachability: Do Agents Listen?</h2>
                     <p style="color: rgba(255,255,255,0.6); margin-bottom: 15px;">
-                        How often agents reduced risk immediately after receiving "High Risk" feedback.
+                        How often agents reduced risk after receiving "High Risk" feedback from the Manager
                     </p>
-                    <div class="chart-container" style="height: 300px; width: 500px; margin: 0 auto;">
-                        <canvas id="complianceChart"></canvas>
-                    </div>
+                    <div id="compliance-summary" class="stats-grid"></div>
                 </div>
             </div>
         </div>
@@ -559,10 +525,7 @@
         let selectedRuns = new Set();
         let ablationChart = null;
         let distributionChart = null;
-        let desperationChart = null;
-        let riskByRankChart = null;
-        let rescueChart = null;
-        let complianceChart = null;
+        let desperationComparisonChart = null;
         
         // View switching
         function showView(view) {
@@ -572,8 +535,7 @@
             event.target.classList.add('active');
             
             if (view === 'ablation') loadRunSelector();
-            if (view === 'psychology') loadPsychRuns();
-            if (view === 'impact') loadImpactRuns();
+            if (view === 'analysis') loadCombinedAnalysis();
             if (view === 'arena') loadExperimentHistory();
         }
         
@@ -835,261 +797,158 @@
             }).join('');
         }
         
-        // PSYCHOLOGY: Load runs dropdown
-        async function loadPsychRuns() {
-            try {
-                const response = await fetch(`${API_BASE}/runs`);
-                const runs = await response.json();
-                
-                const select = document.getElementById('psychRunSelect');
-                select.innerHTML = '<option value="">Select a run...</option>' + 
-                    runs.map(r => `<option value="${r.run_id}">Run #${r.run_id} - ${r.config?.description || r.start_month + ' to ' + r.end_month}</option>`).join('');
-            } catch (error) {
-                console.error('Error loading runs:', error);
-            }
-        }
-        
-        // PSYCHOLOGY: Load psychology data
-        async function loadPsychologyData() {
-            const runId = document.getElementById('psychRunSelect').value;
-            if (!runId) return;
+        // COMBINED ANALYSIS: Load all data at once
+        async function loadCombinedAnalysis() {
+            const loadingEl = document.getElementById('analysis-loading');
+            const contentEl = document.getElementById('analysis-content');
+            
+            loadingEl.style.display = 'block';
+            loadingEl.innerHTML = 'Loading analysis data for all runs...';
+            contentEl.style.display = 'none';
             
             try {
-                const response = await fetch(`${API_BASE}/research/psychology?run_id=${runId}`);
-                const data = await response.json();
+                // 1. Get all runs and agents in parallel
+                const [runsResponse, agentsResponse] = await Promise.all([
+                    fetch(`${API_BASE}/runs`),
+                    fetch(`${API_BASE}/agents`)
+                ]);
                 
-                document.getElementById('psychology-results').style.display = 'block';
-                renderPsychologyResults(data);
-            } catch (error) {
-                alert(`Error: ${error.message}`);
-            }
-        }
-        
-        function renderPsychologyResults(data) {
-            const agents = data.agents;
-            
-            // Summary stats
-            const avgDesperation = agents.reduce((sum, a) => sum + a.desperation_index, 0) / agents.length;
-            const desperateAgents = agents.filter(a => a.desperation_index > 0).length;
-            
-            document.getElementById('psych-summary-stats').innerHTML = `
-                <div class="stat-box">
-                    <div class="value">${avgDesperation.toFixed(2)}</div>
-                    <div class="label">Avg Desperation Index</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value">${desperateAgents}/${agents.length}</div>
-                    <div class="label">Agents Who "Gamble"</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value">${agents[0]?.name || 'N/A'}</div>
-                    <div class="label">Most Desperate</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value">${agents[agents.length-1]?.name || 'N/A'}</div>
-                    <div class="label">Most Composed</div>
-                </div>
-            `;
-            
-            // Desperation chart
-            if (desperationChart) desperationChart.destroy();
-            const ctx1 = document.getElementById('desperationChart').getContext('2d');
-            desperationChart = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: agents.map(a => a.name),
-                    datasets: [{
-                        label: 'Desperation Index',
-                        data: agents.map(a => a.desperation_index),
-                        backgroundColor: agents.map(a => 
-                            a.desperation_index > 0 ? 'rgba(255,77,77,0.7)' : 'rgba(0,255,136,0.7)'
-                        ),
-                        borderColor: agents.map(a => 
-                            a.desperation_index > 0 ? '#ff4d4d' : '#00ff88'
-                        ),
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: 'white' } }
-                    },
-                    scales: {
-                        x: {
-                            ticks: { color: 'white' },
-                            grid: { color: 'rgba(255,255,255,0.1)' }
-                        },
-                        y: {
-                            ticks: { color: 'white' },
-                            grid: { color: 'rgba(255,255,255,0.1)' }
-                        }
-                    }
-                }
-            });
-            
-            // Risk by rank scatter
-            if (riskByRankChart) riskByRankChart.destroy();
-            const ctx2 = document.getElementById('riskByRankChart').getContext('2d');
-            
-            // Flatten all monthly data for scatter plot
-            const scatterData = [];
-            agents.forEach(agent => {
-                agent.monthly_analysis.forEach(m => {
-                    scatterData.push({
-                        x: m.rank_percentile,
-                        y: m.risk_score,
-                        agent: agent.name
-                    });
-                });
-            });
-            
-            riskByRankChart = new Chart(ctx2, {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: 'Risk vs Ranking',
-                        data: scatterData,
-                        backgroundColor: 'rgba(0,212,255,0.5)',
-                        borderColor: '#00d4ff',
-                        pointRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: 'white' } }
-                    },
-                    scales: {
-                        x: {
-                            title: { display: true, text: 'Rank Percentile (100 = 1st Place)', color: 'white' },
-                            ticks: { color: 'white' },
-                            grid: { color: 'rgba(255,255,255,0.1)' }
-                        },
-                        y: {
-                            title: { display: true, text: 'Risk Score', color: 'white' },
-                            ticks: { color: 'white' },
-                            grid: { color: 'rgba(255,255,255,0.1)' }
-                        }
-                    }
-                }
-            });
-            
-            // Agent profiles
-            document.getElementById('agent-profiles').innerHTML = agents.map(agent => {
-                const desperationPct = Math.min(100, Math.max(0, (agent.desperation_index + 2) / 4 * 100));
-                const fillColor = agent.desperation_index > 0 ? '#ff4d4d' : '#00ff88';
+                const runs = await runsResponse.json();
+                const agents = await agentsResponse.json();
                 
-                return `
-                    <div class="agent-psych-card">
-                        <div class="name">${agent.name} (${agent.personality})</div>
-                        <div style="font-size: 0.9em; color: rgba(255,255,255,0.6);">
-                            Desperation: ${agent.desperation_index.toFixed(2)}
-                        </div>
-                        <div class="desperation-bar">
-                            <div class="desperation-fill" style="width: ${desperationPct}%; background: ${fillColor};"></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: rgba(255,255,255,0.5);">
-                            <span>Bottom Tier: ${agent.months_in_bottom_tier} months</span>
-                            <span>Top Tier: ${agent.months_in_top_tier} months</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-        
-        // IMPACT: Load runs
-        async function loadImpactRuns() {
-            try {
-                const response = await fetch(`${API_BASE}/runs`);
-                const runs = await response.json();
-                
-                const options = runs.map(r => `<option value="${r.run_id}">Run #${r.run_id} (${r.config?.description || 'No Desc'})</option>`).join('');
-                
-                document.getElementById('impactBaselineSelect').innerHTML = '<option value="">Select Baseline...</option>' + options;
-                document.getElementById('impactManagerSelect').innerHTML = '<option value="">Select Manager Run...</option>' + options;
-            } catch (error) {
-                console.error('Error loading runs:', error);
-            }
-        }
-
-        // IMPACT: Run Analysis
-        async function runImpactAnalysis() {
-            const baselineId = document.getElementById('impactBaselineSelect').value;
-            const managerId = document.getElementById('impactManagerSelect').value;
-            
-            if (!baselineId || !managerId) {
-                alert('Please select both runs');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_BASE}/research/impact?baseline_run_id=${baselineId}&manager_run_id=${managerId}`);
-                const data = await response.json();
-                
-                if (data.error) {
-                    alert(data.error);
+                if (runs.length === 0) {
+                    loadingEl.innerHTML = '<p>No experiment runs available. Launch experiments in the Arena first!</p>';
                     return;
                 }
                 
-                document.getElementById('impact-results').style.display = 'block';
-                renderImpactResults(data);
+                loadingEl.innerHTML = `Loading data for ${runs.length} runs...`;
+                
+                // 2. Get leaderboards for all runs in parallel
+                const leaderboardPromises = runs.map(run => 
+                    fetch(`${API_BASE}/leaderboard?run_id=${run.run_id}`)
+                        .then(r => r.json())
+                        .catch(() => [])
+                );
+                const leaderboardResults = await Promise.all(leaderboardPromises);
+                
+                const leaderboards = {};
+                runs.forEach((run, i) => {
+                    leaderboards[run.run_id] = leaderboardResults[i];
+                });
+                
+                // 3. Get feedback for manager-enabled runs (simplified - just count)
+                const feedbackByRun = {};
+                const managerRuns = runs.filter(r => r.config?.enable_manager);
+                
+                for (const run of managerRuns) {
+                    try {
+                        // Just get feedback for first agent to check if API works
+                        const fbResponse = await fetch(`${API_BASE}/agents/1/feedback?run_id=${run.run_id}`);
+                        const fb = await fbResponse.json();
+                        feedbackByRun[run.run_id] = fb;
+                    } catch (e) {
+                        feedbackByRun[run.run_id] = [];
+                    }
+                }
+                
+                // 4. Try to get impact analysis if we have baseline and manager runs
+                const baselineRun = runs.find(r => !r.config?.enable_manager);
+                const managerRun = runs.find(r => r.config?.enable_manager);
+                let impactData = null;
+                
+                if (baselineRun && managerRun) {
+                    try {
+                        const impactResponse = await fetch(`${API_BASE}/research/impact?baseline_run_id=${baselineRun.run_id}&manager_run_id=${managerRun.run_id}`);
+                        impactData = await impactResponse.json();
+                        if (impactData.error) impactData = null;
+                    } catch (e) {
+                        console.error('Failed to load impact data:', e);
+                    }
+                }
+                
+                // Render with available data
+                renderCombinedAnalysis(runs, agents, leaderboards, feedbackByRun, impactData);
+                
+                loadingEl.style.display = 'none';
+                contentEl.style.display = 'block';
+                
             } catch (error) {
-                alert(`Error: ${error.message}`);
+                console.error('Analysis error:', error);
+                loadingEl.innerHTML = `<p style="color: #ff4d4d;">Error loading analysis: ${error.message}</p>`;
             }
         }
-
-        function renderImpactResults(data) {
-            // Stats
-            const comp = data.compliance_stats;
-            const complianceRate = (comp.compliant / comp.total_risk_feedback * 100) || 0;
+        
+        function renderCombinedAnalysis(runs, agents, leaderboards, feedbackByRun, impactData) {
+            // 1. Runs Overview
+            const runsOverview = document.getElementById('runs-overview');
+            runsOverview.innerHTML = runs.map(run => {
+                const config = run.config || {};
+                const lb = leaderboards[run.run_id] || [];
+                const avgReturn = lb.length > 0 ? (lb.reduce((s, a) => s + a.total_return, 0) / lb.length).toFixed(1) : 'N/A';
+                
+                return `
+                    <div class="experiment-card">
+                        <h3>Run #${run.run_id}</h3>
+                        <p style="color: rgba(255,255,255,0.6); font-size: 0.9em;">${config.description || 'No description'}</p>
+                        <div class="config-badges">
+                            <span class="badge ${config.enable_memory ? 'on' : 'off'}">🧠 Memory</span>
+                            <span class="badge ${config.enable_reflection ? 'on' : 'off'}">📝 Reflect</span>
+                            <span class="badge ${config.enable_manager ? 'on' : 'off'}">👨‍💼 Manager</span>
+                        </div>
+                        <p style="font-size: 0.85em; color: rgba(255,255,255,0.5);">${run.start_month || 'N/A'} → ${run.end_month || 'N/A'}</p>
+                        <p style="margin-top: 10px; font-size: 1.2em; color: #00d4ff;">Avg Return: ${avgReturn}%</p>
+                    </div>
+                `;
+            }).join('');
             
-            document.getElementById('impact-stats').innerHTML = `
-                <div class="stat-box">
-                    <div class="value">${complianceRate.toFixed(1)}%</div>
-                    <div class="label">Compliance Rate</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value">${comp.total_risk_feedback}</div>
-                    <div class="label">"Risk" Warnings Issued</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value">${data.bottom_agents.length}</div>
-                    <div class="label">Agents Analyzed</div>
-                </div>
-            `;
+            // 2. Manager Feedback Summary
+            const feedbackSummary = document.getElementById('feedback-summary');
+            const feedbackRuns = Object.entries(feedbackByRun);
             
-            // Rescue Chart
-            if (rescueChart) rescueChart.destroy();
-            const ctx1 = document.getElementById('rescueChart').getContext('2d');
+            if (feedbackRuns.length === 0) {
+                feedbackSummary.innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center;">No runs with Manager enabled found.</p>';
+            } else {
+                let fbHtml = '<div class="stats-grid">';
+                for (const [runId, feedbacks] of feedbackRuns) {
+                    const run = runs.find(r => r.run_id == runId);
+                    fbHtml += `
+                        <div class="stat-box">
+                            <div class="value">${Array.isArray(feedbacks) ? feedbacks.length : 0}</div>
+                            <div class="label">Run #${runId} Feedback Count</div>
+                        </div>
+                    `;
+                }
+                fbHtml += '</div>';
+                feedbackSummary.innerHTML = fbHtml;
+            }
             
+            // 3. Agent Performance Comparison Chart
+            if (desperationComparisonChart) desperationComparisonChart.destroy();
+            
+            const ctx = document.getElementById('desperationComparisonChart').getContext('2d');
             const datasets = [];
-            data.rescue_analysis.forEach((agent, i) => {
-                const color = `hsla(${i * 120}, 70%, 50%, 1)`;
+            const colors = ['#00d4ff', '#ff00ff', '#00ff88', '#ffaa00', '#ff4d4d'];
+            
+            runs.forEach((run, i) => {
+                const lb = leaderboards[run.run_id] || [];
+                if (lb.length === 0) return;
+                
                 datasets.push({
-                    label: `${agent.name} (Baseline)`,
-                    data: agent.baseline_curve,
-                    borderColor: color,
-                    borderDash: [5, 5],
-                    borderWidth: 2,
-                    pointRadius: 0
-                });
-                datasets.push({
-                    label: `${agent.name} (Manager)`,
-                    data: agent.manager_curve,
-                    borderColor: color,
-                    borderWidth: 3,
-                    pointRadius: 0
+                    label: `Run #${run.run_id} (${run.config?.description || 'No desc'})`,
+                    data: lb.map(a => a.total_return),
+                    backgroundColor: colors[i % colors.length] + '99',
+                    borderColor: colors[i % colors.length],
+                    borderWidth: 2
                 });
             });
             
-            rescueChart = new Chart(ctx1, {
-                type: 'line',
+            const firstLb = Object.values(leaderboards).find(lb => lb?.length > 0) || [];
+            const agentNames = firstLb.map(a => a.name);
+            
+            desperationComparisonChart = new Chart(ctx, {
+                type: 'bar',
                 data: {
-                    labels: Array.from({length: data.rescue_analysis[0].baseline_curve.length}, (_, i) => i),
+                    labels: agentNames,
                     datasets: datasets
                 },
                 options: {
@@ -1097,36 +956,107 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { labels: { color: 'white' } },
-                        title: { display: true, text: 'Dashed = Baseline, Solid = Manager', color: 'white' }
+                        title: { display: true, text: 'Total Return by Agent Across Runs', color: 'white' }
                     },
                     scales: {
-                        y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'white' } },
-                        x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'white' } }
+                        y: {
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            title: { display: true, text: 'Total Return (%)', color: 'white' }
+                        },
+                        x: {
+                            ticks: { color: 'white', maxRotation: 45 },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        }
                     }
                 }
             });
             
-            // Compliance Chart
-            if (complianceChart) complianceChart.destroy();
-            const ctx2 = document.getElementById('complianceChart').getContext('2d');
+            // 4. Rescue Effect Comparison
+            const rescueContainer = document.getElementById('rescue-comparison');
             
-            complianceChart = new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Compliant (Reduced Risk)', 'Non-Compliant (Ignored)'],
-                    datasets: [{
-                        data: [comp.compliant, comp.non_compliant],
-                        backgroundColor: ['#00ff88', '#ff4d4d'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { color: 'white' } }
-                    }
-                }
-            });
+            if (impactData && impactData.rescue_analysis && impactData.rescue_analysis.length > 0) {
+                let rescueHtml = `
+                    <div class="stats-grid">
+                        ${impactData.rescue_analysis.map(agent => {
+                            const improvement = ((agent.manager_final - agent.baseline_final) / agent.baseline_final * 100);
+                            const impClass = improvement > 0 ? 'positive' : 'negative';
+                            return `
+                            <div class="stat-box">
+                                <div class="value" style="font-size: 1.2em;">${agent.name}</div>
+                                <div style="margin-top: 10px;">
+                                    <span style="color: #ff4d4d;">Baseline: $${agent.baseline_final.toFixed(0)}</span>
+                                    <span style="margin: 0 10px;">→</span>
+                                    <span style="color: #00ff88;">Manager: $${agent.manager_final.toFixed(0)}</span>
+                                </div>
+                                <div class="label ${impClass}" style="margin-top: 5px; font-size: 1.1em;">
+                                    ${improvement > 0 ? '+' : ''}${improvement.toFixed(1)}%
+                                </div>
+                            </div>
+                        `}).join('')}
+                    </div>
+                    <p style="color: rgba(255,255,255,0.6); margin-top: 15px; text-align: center;">
+                        The bottom 3 agents from the baseline run showing their performance with Manager oversight
+                    </p>
+                `;
+                rescueContainer.innerHTML = rescueHtml;
+            } else {
+                rescueContainer.innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center;">Need both a Baseline (no manager) and Manager run to compare the rescue effect.</p>';
+            }
+            
+            // 5. Agent Performance Table
+            const tableHeader = document.getElementById('run-headers');
+            const tableBody = document.getElementById('agent-performance-body');
+            
+            tableHeader.outerHTML = runs.map(r => `<th>Run #${r.run_id}</th>`).join('');
+            
+            tableBody.innerHTML = agents.map(agent => {
+                const cells = runs.map(run => {
+                    const lb = leaderboards[run.run_id] || [];
+                    const agentData = lb.find(a => a.agent_id === agent.id);
+                    if (!agentData) return '<td>-</td>';
+                    
+                    const retClass = agentData.total_return > 0 ? 'positive' : 'negative';
+                    return `<td class="${retClass}">${agentData.total_return.toFixed(1)}%</td>`;
+                }).join('');
+                
+                return `
+                    <tr>
+                        <td><strong>${agent.name}</strong></td>
+                        <td style="color: rgba(255,255,255,0.6);">${agent.personality}</td>
+                        ${cells}
+                    </tr>
+                `;
+            }).join('');
+            
+            // 6. Compliance Stats
+            const complianceSummary = document.getElementById('compliance-summary');
+            
+            if (impactData && impactData.compliance_stats) {
+                const comp = impactData.compliance_stats;
+                const complianceRate = comp.total_risk_feedback > 0 ? (comp.compliant / comp.total_risk_feedback * 100) : 0;
+                
+                complianceSummary.innerHTML = `
+                    <div class="stat-box">
+                        <div class="value">${complianceRate.toFixed(1)}%</div>
+                        <div class="label">Compliance Rate</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value" style="color: #00ff88;">${comp.compliant}</div>
+                        <div class="label">Listened (Reduced Risk)</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value" style="color: #ff4d4d;">${comp.non_compliant}</div>
+                        <div class="label">Ignored Feedback</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value">${comp.total_risk_feedback}</div>
+                        <div class="label">Total Risk Warnings</div>
+                    </div>
+                `;
+            } else {
+                complianceSummary.innerHTML = '<div class="stat-box" style="grid-column: span 4;"><p style="color: rgba(255,255,255,0.5); text-align: center;">Need Manager-enabled runs to analyze compliance.</p></div>';
+            }
         }
         
         // Initialize

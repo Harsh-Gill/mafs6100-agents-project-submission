@@ -977,7 +977,7 @@ def analyze_manager_impact(baseline_run_id: int, manager_run_id: int):
                 compliance_stats['total_risk_feedback'] += 1
                 
                 # Find the trade for this agent in the NEXT month
-                # fb.month is like "2020-03". We need the trade for "2020-04" or later
+                # fb.month is like "2018-03". We need the trade for "2018-04" or later
                 # Simplified: just look for the next trade chronologically
                 
                 next_trade = session.query(Trade).filter(

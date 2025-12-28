@@ -1,0 +1,25 @@
+# AgenticTraders Dependencies
+
+# Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+
+# Database
+sqlalchemy==2.0.25
+
+# Market Data
+yfinance==0.2.36
+pandas==2.2.0
+numpy==1.26.3
+
+# AI / ML
+scikit-learn==1.4.0
+requests==2.31.0
+
+# Optional: For better embeddings (if not using mock)
+# openai==1.10.0
+# sentence-transformers==2.3.1
+
+matplotlib
+seaborn

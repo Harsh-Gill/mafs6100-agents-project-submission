@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgenticTraders Dashboard 🤖📈</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .controls label {
+            font-weight: 600;
+        }
+        
+        .controls select, .controls button {
+            padding: 10px 15px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .controls button {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .controls button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .leaderboard-table th {
+            background: #f7f7f7;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .leaderboard-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .leaderboard-table tr:hover {
+            background: #f9f9f9;
+            cursor: pointer;
+        }
+        
+        .positive {
+            color: #10b981;
+            font-weight: 600;
+        }
+        
+        .negative {
+            color: #ef4444;
+            font-weight: 600;
+        }
+        
+        .agent-details {
+            display: none;
+        }
+        
+        .agent-details.active {
+            display: block;
+        }
+        
+        .trades-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .trade-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .trade-item.long {
+            border-left-color: #10b981;
+        }
+        
+        .trade-item.short {
+            border-left-color: #ef4444;
+        }
+        
+        .trade-item.cash {
+            border-left-color: #6b7280;
+        }
+        
+        .memory-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            border-left: 4px solid #764ba2;
+        }
+        
+        .memory-item .meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .memory-item .situation {
+            font-style: italic;
+            color: #333;
+        }
+        
+        .notes-section {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        
+        .badge.momentum {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge.mean_reversion {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .badge.volatility {
+            background: #fecaca;
+            color: #991b1b;
+        }
+        
+        .badge.sentiment {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .back-button {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .back-button:hover {
+            background: #4b5563;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .stat-card .value {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 AgenticTraders Dashboard 📈</h1>
+            <p>Multi-Agent AI Trading System with Memory & Learning</p>
+        </header>
+        
+        <div class="controls">
+            <div>
+                <label for="runSelect">Select Run:</label>
+                <select id="runSelect" onchange="loadRun()">
+                    <option value="">All Runs</option>
+                </select>
+            </div>
+            <div>
+                <label for="startYear">From:</label>
+                <input type="number" id="startYear" placeholder="2020" min="2010" max="2025" style="width: 80px; padding: 5px;">
+            </div>
+            <div>
+                <label for="endYear">To:</label>
+                <input type="number" id="endYear" placeholder="2025" min="2010" max="2025" style="width: 80px; padding: 5px;">
+            </div>
+            <button onclick="applyDateFilter()" style="background: #10b981;">📅 Apply Filter</button>
+            <button onclick="clearDateFilter()" style="background: #6b7280;">✖ Clear</button>
+            <button onclick="refreshData()">🔄 Refresh</button>
+            <button onclick="showLeaderboard()">📊 Leaderboard</button>
+            <div style="margin-left: auto;">
+                <span id="statusIndicator" style="color: white; font-weight: 600;"></span>
+            </div>
+        </div>
+        
+        <div id="mainView">
+            <div class="loading">Loading data...</div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let currentRunId = null;
+        let startMonth = null;
+        let endMonth = null;
+        let allAgents = [];
+        let performanceChart = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRuns();
+            refreshData();
+        });
+        
+        function applyDateFilter() {
+            const startYear = document.getElementById('startYear').value;
+            const endYear = document.getElementById('endYear').value;
+            
+            startMonth = startYear ? `${startYear}-01` : null;
+            endMonth = endYear ? `${endYear}-12` : null;
+            
+            refreshData();
+        }
+        
+        function clearDateFilter() {
+            document.getElementById('startYear').value = '';
+            document.getElementById('endYear').value = '';
+            startMonth = null;
+            endMonth = null;
+            refreshData();
+        }
+        
+        async function loadRuns() {
+            try {
+                const response = await fetch(`${API_BASE}/runs`);
+                const runs = await response.json();
+                
+                const select = document.getElementById('runSelect');
+                select.innerHTML = '<option value="">All Runs</option>';
+                
+                runs.forEach(run => {
+                    const option = document.createElement('option');
+                    option.value = run.run_id;
+                    option.textContent = `Run ${run.run_id} (${run.start_year}-${run.end_year}, ${run.total_months} months)`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading runs:', error);
+            }
+        }
+        
+        function loadRun() {
+            const select = document.getElementById('runSelect');
+            currentRunId = select.value || null;
+            refreshData();
+        }
+        
+        async function refreshData() {
+            showLeaderboard();
+        }
+        
+        async function showLeaderboard() {
+            const mainView = document.getElementById('mainView');
+            mainView.innerHTML = '<div class="loading">Loading leaderboard...</div>';
+            
+            try {
+                // Fetch agents and leaderboard
+                const agentsResponse = await fetch(`${API_BASE}/agents`);
+                allAgents = await agentsResponse.json();
+                
+                // Build leaderboard URL with filters
+                let leaderboardUrl = `${API_BASE}/leaderboard?`;
+                if (currentRunId) leaderboardUrl += `run_id=${currentRunId}&`;
+                if (startMonth) leaderboardUrl += `start_month=${startMonth}&`;
+                if (endMonth) leaderboardUrl += `end_month=${endMonth}&`;
+                
+                const leaderboardResponse = await fetch(leaderboardUrl);
+                const leaderboard = await leaderboardResponse.json();
+                
+                // Update status
+                let statusText = currentRunId ? `Run ${currentRunId}` : 'All Runs';
+                if (startMonth || endMonth) {
+                    const from = startMonth ? startMonth.substring(0, 4) : 'start';
+                    const to = endMonth ? endMonth.substring(0, 4) : 'end';
+                    statusText += ` | 📅 ${from}-${to}`;
+                }
+                document.getElementById('statusIndicator').textContent = statusText;
+                
+                // Render leaderboard
+                mainView.innerHTML = `
+                    <div class="grid">
+                        <div class="card" style="grid-column: 1 / -1;">
+                            <h2>🏆 Agent Leaderboard</h2>
+                            <table class="leaderboard-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Agent</th>
+                                        <th>Personality</th>
+                                        <th>Total Return</th>
+                                        <th>Sharpe Ratio</th>
+                                        <th>Win Rate</th>
+                                        <th>Total Trades</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboardBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 20px;">
+                        <h2>📈 Cumulative Returns Comparison</h2>
+                        <div style="height: 400px; position: relative;">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                `;
+                
+                // Populate leaderboard table
+                const tbody = document.getElementById('leaderboardBody');
+                leaderboard.forEach((agent, index) => {
+                    const tr = document.createElement('tr');
+                    tr.onclick = () => showAgentDetails(agent.agent_id);
+                    
+                    const totalReturn = agent.total_return ?? 0;
+                    const sharpeRatio = agent.sharpe_ratio ?? 0;
+                    const winRate = agent.win_rate ?? 0;
+                    const returnClass = totalReturn >= 0 ? 'positive' : 'negative';
+                    
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td><strong>${agent.name}</strong></td>
+                        <td>${agent.personality}</td>
+                        <td class="${returnClass}">${totalReturn.toFixed(2)}%</td>
+                        <td>${sharpeRatio.toFixed(2)}</td>
+                        <td>${winRate.toFixed(1)}%</td>
+                        <td>${agent.total_trades || 0}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                
+                // Draw performance chart
+                await drawPerformanceChart(leaderboard);
+                
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                mainView.innerHTML = `<div class="card"><p style="color: red;">Error loading data. Make sure the server is running on ${API_BASE}</p></div>`;
+            }
+        }
+        
+        async function drawPerformanceChart(leaderboard) {
+            // Destroy existing chart if it exists
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            const canvas = document.getElementById('performanceChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Fetch all trades for each agent to build cumulative curves
+            const datasets = [];
+            let maxLength = 0;
+            
+            for (const agent of leaderboard.slice(0, 5)) { // Top 5 agents
+                // Build trades URL with filters
+                let tradesUrl = `${API_BASE}/agents/${agent.agent_id}/trades?`;
+                if (currentRunId) tradesUrl += `run_id=${currentRunId}&`;
+                    
+                const response = await fetch(tradesUrl);
+                let trades = await response.json();
+                
+                // Apply date filtering on frontend as well
+                if (startMonth) trades = trades.filter(t => t.month >= startMonth);
+                if (endMonth) trades = trades.filter(t => t.month <= endMonth);
+                
+                // Calculate cumulative returns
+                let portfolio = 100;
+                const data = [portfolio];
+                
+                trades.forEach(trade => {
+                    const allocation = trade.allocation / 100;
+                    portfolio *= (1 + trade.return_pct / 100 * allocation);
+                    data.push(portfolio);
+                });
+                
+                maxLength = Math.max(maxLength, data.length);
+                
+                const colors = [
+                    'rgb(102, 126, 234)',
+                    'rgb(118, 75, 162)',
+                    'rgb(16, 185, 129)',
+                    'rgb(239, 68, 68)',
+                    'rgb(245, 158, 11)'
+                ];
+                
+                datasets.push({
+                    label: agent.name,
+                    data: data,
+                    borderColor: colors[datasets.length % colors.length],
+                    backgroundColor: colors[datasets.length % colors.length] + '20',
+                    tension: 0.3,
+                    fill: false,
+                    borderWidth: 2
+                });
+            }
+            
+            // Add S&P 500 benchmark - assuming 10% annual return
+            const spyData = [100];
+            const monthlyReturn = Math.pow(1.10, 1/12) - 1; // ~0.8% per month
+            for (let i = 1; i < maxLength; i++) {
+                spyData.push(spyData[i-1] * (1 + monthlyReturn));
+            }
+            
+            datasets.push({
+                label: 'S&P 500 Benchmark',
+                data: spyData,
+                borderColor: 'rgb(156, 163, 175)',
+                backgroundColor: 'transparent',
+                tension: 0.3,
+                fill: false,
+                borderWidth: 2,
+                borderDash: [5, 5]
+            });
+            
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: maxLength}, (_, i) => i),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Portfolio Value Over Time (Starting $100)'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Portfolio Value ($)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        async function showAgentDetails(agentId) {
+            const mainView = document.getElementById('mainView');
+            mainView.innerHTML = '<div class="loading">Loading agent details...</div>';
+            
+            try {
+                // Fetch agent data
+                const agent = allAgents.find(a => a.id === agentId);
+                
+                // Build performance URL with filters
+                let performanceUrl = `${API_BASE}/agents/${agentId}/performance?`;
+                if (currentRunId) performanceUrl += `run_id=${currentRunId}&`;
+                if (startMonth) performanceUrl += `start_month=${startMonth}&`;
+                if (endMonth) performanceUrl += `end_month=${endMonth}&`;
+                const performanceResponse = await fetch(performanceUrl);
+                const performance = await performanceResponse.json();
+                
+                const tradesUrl = currentRunId
+                    ? `${API_BASE}/agents/${agentId}/trades?run_id=${currentRunId}`
+                    : `${API_BASE}/agents/${agentId}/trades`;
+                const tradesResponse = await fetch(tradesUrl);
+                const trades = await tradesResponse.json();
+                
+                const notesResponse = await fetch(`${API_BASE}/agents/${agentId}/notes`);
+                const notes = await notesResponse.json();
+                
+                // Fetch memories
+                const memoriesUrl = currentRunId
+                    ? `${API_BASE}/agents/${agentId}/memories?run_id=${currentRunId}`
+                    : `${API_BASE}/agents/${agentId}/memories`;
+                const memoriesResponse = await fetch(memoriesUrl);
+                const memories = await memoriesResponse.json();
+                
+                // Fetch manager feedback history
+                const feedbackUrl = currentRunId
+                    ? `${API_BASE}/agents/${agentId}/feedback?run_id=${currentRunId}`
+                    : `${API_BASE}/agents/${agentId}/feedback`;
+                const feedbackResponse = await fetch(feedbackUrl);
+                const feedbackHistory = await feedbackResponse.json();
+                
+                // Fetch strategy notes history
+                const notesHistoryUrl = currentRunId
+                    ? `${API_BASE}/agents/${agentId}/notes-history?run_id=${currentRunId}`
+                    : `${API_BASE}/agents/${agentId}/notes-history`;
+                const notesHistoryResponse = await fetch(notesHistoryUrl);
+                const notesHistory = await notesHistoryResponse.json();
+                
+                // Calculate additional metrics
+                const returns = trades.map(t => t.return_pct);
+                const maxReturn = returns.length > 0 ? Math.max(...returns) : 0;
+                const minReturn = returns.length > 0 ? Math.min(...returns) : 0;
+                const avgReturn = returns.length > 0 ? returns.reduce((a, b) => a + b, 0) / returns.length : 0;
+                
+                // Factor usage breakdown
+                const factorCounts = {};
+                trades.forEach(t => {
+                    factorCounts[t.factor_choice] = (factorCounts[t.factor_choice] || 0) + 1;
+                });
+                
+                // Action breakdown
+                const actionCounts = { long: 0, short: 0, cash: 0 };
+                trades.forEach(t => {
+                    actionCounts[t.action] = (actionCounts[t.action] || 0) + 1;
+                });
+                
+                // Render agent details
+                mainView.innerHTML = `
+                    <button class="back-button" onclick="showLeaderboard()">← Back to Leaderboard</button>
+                    
+                    <div class="card" style="margin-bottom: 20px;">
+                        <h2>${agent.name}</h2>
+                        <p><strong>Personality:</strong> ${agent.personality}</p>
+                        <p><strong>Allowed Factors:</strong> ${agent.allowed_factors.join(', ')}</p>
+                        <p><strong>Preferred Indicators:</strong> ${agent.preferred_indicators.join(', ')}</p>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 20px;">
+                            <div class="stat-card">
+                                <div class="label">Total Return</div>
+                                <div class="value">${(performance.total_return ?? 0).toFixed(2)}%</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">Sharpe Ratio</div>
+                                <div class="value">${(performance.sharpe_ratio ?? 0).toFixed(2)}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">Win Rate</div>
+                                <div class="value">${(performance.win_rate ?? 0).toFixed(1)}%</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">Total Trades</div>
+                                <div class="value">${performance.total_trades || 0}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">Avg Return</div>
+                                <div class="value">${avgReturn.toFixed(2)}%</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">Best Month</div>
+                                <div class="value">${maxReturn.toFixed(2)}%</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">Worst Month</div>
+                                <div class="value">${minReturn.toFixed(2)}%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid">
+                        <div class="card">
+                            <h2>📊 Trading Strategy Breakdown</h2>
+                            <div style="margin-bottom: 15px;">
+                                <h3 style="font-size: 1.1em; margin-bottom: 10px; color: #667eea;">Factor Usage</h3>
+                                ${Object.entries(factorCounts).map(([factor, count]) => `
+                                    <div style="display: flex; justify-content: space-between; padding: 8px; background: #f9f9f9; margin-bottom: 5px; border-radius: 4px;">
+                                        <span class="badge ${factor}">${factor}</span>
+                                        <span><strong>${count}</strong> trades (${((count / trades.length) * 100).toFixed(1)}%)</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div>
+                                <h3 style="font-size: 1.1em; margin-bottom: 10px; color: #667eea;">Action Distribution</h3>
+                                <div style="display: flex; gap: 10px;">
+                                    <div style="flex: 1; text-align: center; padding: 10px; background: #d1fae5; border-radius: 4px;">
+                                        <div style="font-size: 0.9em; color: #065f46;">Long</div>
+                                        <div style="font-size: 1.5em; font-weight: 700; color: #065f46;">${actionCounts.long}</div>
+                                    </div>
+                                    <div style="flex: 1; text-align: center; padding: 10px; background: #fecaca; border-radius: 4px;">
+                                        <div style="font-size: 0.9em; color: #991b1b;">Short</div>
+                                        <div style="font-size: 1.5em; font-weight: 700; color: #991b1b;">${actionCounts.short}</div>
+                                    </div>
+                                    <div style="flex: 1; text-align: center; padding: 10px; background: #e5e7eb; border-radius: 4px;">
+                                        <div style="font-size: 0.9em; color: #4b5563;">Cash</div>
+                                        <div style="font-size: 1.5em; font-weight: 700; color: #4b5563;">${actionCounts.cash}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h2>📝 Current Strategy Notes (Synthesized from ${memories.length} learning experiences below)</h2>
+                            <div class="notes-section">${notes.notes || 'No notes yet. Agent is still learning...'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 20px;">
+                        <h2>📖 Strategy Notes Evolution (${notesHistory.length} updates)</h2>
+                        <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
+                            📝 <strong>Historical snapshots:</strong> See how the agent's strategy notes evolved over time. Updates occur every 6 months during the backtest.
+                        </p>
+                        <input type="text" id="notesHistorySearch" placeholder="Search notes by month or content..." 
+                            style="width: 100%; padding: 10px; border: 2px solid #667eea; border-radius: 5px; margin-bottom: 15px; font-size: 14px;"
+                            oninput="filterNotesHistory(${agentId})">
+                        <div id="notesHistoryContainer" style="max-height: 600px; overflow-y: auto;">
+                            ${renderNotesHistory(notesHistory)}
+                        </div>
+                    </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 20px;">
+                        <h2>🎯 Manager Feedback History (${feedbackHistory.length} reviews)</h2>
+                        <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
+                            AI manager evaluates agent performance and provides guidance throughout the trading period.
+                        </p>
+                        <input type="text" id="feedbackSearch" placeholder="Search feedback by month or content..." 
+                            style="width: 100%; padding: 10px; border: 2px solid #667eea; border-radius: 5px; margin-bottom: 15px; font-size: 14px;"
+                            oninput="filterFeedback(${agentId})">
+                        <div id="feedbackContainer" style="max-height: 500px; overflow-y: auto;">
+                            ${renderFeedback(feedbackHistory)}
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 20px;">
+                        <h2>🧠 Strategy Evolution Timeline (${memories.length} learning experiences) - RAG Enabled</h2>
+                        <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
+                            📜 <strong>Historical strategy notes:</strong> Each memory represents a situation the agent learned from. These build up over time into the synthesized strategy notes above. Agent uses RAG (Retrieval-Augmented Generation) to recall similar past situations when making decisions.
+                        </p>
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <input type="text" id="memorySearch" placeholder="Search by month, situation, regime, or factor..." 
+                                style="flex: 1; padding: 10px; border: 2px solid #667eea; border-radius: 5px; font-size: 14px;"
+                                oninput="filterMemories(${agentId})">
+                            <select id="memorySortOrder" onchange="filterMemories(${agentId})" style="padding: 10px; border: 2px solid #667eea; border-radius: 5px;">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <button onclick="filterMemoriesByFactor(${agentId}, 'all')" class="filter-btn" style="margin-right: 5px; padding: 5px 10px; border: 1px solid #667eea; background: white; border-radius: 4px; cursor: pointer;">All</button>
+                            <button onclick="filterMemoriesByFactor(${agentId}, 'momentum')" class="filter-btn badge momentum" style="margin-right: 5px; padding: 5px 10px; border: none; cursor: pointer;">Momentum</button>
+                            <button onclick="filterMemoriesByFactor(${agentId}, 'mean_reversion')" class="filter-btn badge mean_reversion" style="margin-right: 5px; padding: 5px 10px; border: none; cursor: pointer;">Mean Reversion</button>
+                            <button onclick="filterMemoriesByFactor(${agentId}, 'volatility')" class="filter-btn badge volatility" style="margin-right: 5px; padding: 5px 10px; border: none; cursor: pointer;">Volatility</button>
+                            <button onclick="filterMemoriesByFactor(${agentId}, 'sentiment')" class="filter-btn badge sentiment" style="padding: 5px 10px; border: none; cursor: pointer;">Sentiment</button>
+                        </div>
+                        <div id="memoriesContainer" style="max-height: 600px; overflow-y: auto;">
+                            ${renderMemoriesTimeline(memories)}
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 20px;">
+                        <h2>📊 Complete Trade History (${trades.length} trades)</h2>
+                        <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+                            <input type="text" id="tradeSearch" placeholder="Search by month, stock, or factor..." 
+                                style="flex: 1; padding: 10px; border: 2px solid #667eea; border-radius: 5px; font-size: 14px;"
+                                oninput="filterTrades(${agentId})">
+                            <select id="tradeActionFilter" onchange="filterTrades(${agentId})" style="padding: 10px; border: 2px solid #667eea; border-radius: 5px;">
+                                <option value="all">All Actions</option>
+                                <option value="long">Long Only</option>
+                                <option value="short">Short Only</option>
+                                <option value="cash">Cash Only</option>
+                            </select>
+                            <select id="tradeSortOrder" onchange="filterTrades(${agentId})" style="padding: 10px; border: 2px solid #667eea; border-radius: 5px;">
+                                <option value="recent">Most Recent</option>
+                window.agentFeedback = feedbackHistory;
+                                <option value="best">Best Returns</option>
+                                <option value="worst">Worst Returns</option>
+                            </select>
+                        </div>
+                        <div id="tradesContainer" class="trades-list">
+                            ${renderTrades(trades)}
+                        </div>
+                    </div>
+                `;
+                
+                // Store data for filtering
+                window.agentMemories = memories;
+                window.agentTrades = trades;
+                window.agentFeedback = feedbackHistory;
+                window.agentNotesHistory = notesHistory;
+                
+            } catch (error) {
+                console.error('Error loading agent details:', error);
+                mainView.innerHTML = `
+                    <button class="back-button" onclick="showLeaderboard()">← Back to Leaderboard</button>
+                    <div class="card"><p style="color: red;">Error loading agent details.</p></div>
+                `;
+            }
+        }
+        
+        function renderMemoriesTimeline(memories) {
+            if (memories.length === 0) {
+                return '<p style="color: #666; text-align: center; padding: 20px;">No memories yet. Agent is building experience...</p>';
+            }
+            
+            // Group memories by month
+            const memoryGroups = {};
+            memories.forEach(memory => {
+                if (!memoryGroups[memory.month]) {
+                    memoryGroups[memory.month] = [];
+                }
+                memoryGroups[memory.month].push(memory);
+            });
+            
+            // Sort months in reverse chronological order
+            const sortedMonths = Object.keys(memoryGroups).sort().reverse();
+            
+            return sortedMonths.map(month => {
+                const monthMemories = memoryGroups[month];
+                return `
+                    <div style="margin-bottom: 25px;">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 15px; border-radius: 5px; font-weight: 600; margin-bottom: 10px;">
+                            📅 ${month} (${monthMemories.length} learning${monthMemories.length > 1 ? 's' : ''})
+                        </div>
+                        ${monthMemories.map(memory => `
+                            <div class="memory-item" style="margin-left: 20px; margin-bottom: 10px;">
+                                <div class="meta">
+                                    <span class="badge ${memory.factor_used}">${memory.factor_used}</span>
+                                    <span><strong>Regime:</strong> ${memory.market_regime}</span>
+                                    <span><strong>Result:</strong> ${memory.result}</span>
+                                </div>
+                                <div class="situation">"${memory.situation}"</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderMemories(memories) {
+            return renderMemoriesTimeline(memories);
+        }
+        
+        function renderTrades(trades) {
+            if (trades.length === 0) {
+                return '<p style="color: #666; text-align: center; padding: 20px;">No trades yet.</p>';
+            }
+            return trades.map(trade => {
+                const returnClass = trade.return_pct >= 0 ? 'positive' : 'negative';
+                return `
+                    <div class="trade-item ${trade.action}">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <strong>${trade.month}</strong>
+                            <span class="${returnClass}">${trade.return_pct.toFixed(2)}%</span>
+                        </div>
+                        <div style="font-size: 0.9em;">
+                            <span class="badge ${trade.factor_choice}">${trade.factor_choice}</span>
+                            <span style="text-transform: uppercase; font-weight: 600;">${trade.action}</span>
+                            - Confidence: ${(trade.confidence * 100).toFixed(0)}%
+                            - Allocation: ${trade.allocation}%
+                        </div>
+                        <div style="font-size: 0.85em; color: #666; margin-top: 5px;">
+                            ${trade.stocks_long.length > 0 ? `Long: ${trade.stocks_long.join(', ')}` : ''}
+                            ${trade.stocks_short.length > 0 ? `Short: ${trade.stocks_short.join(', ')}` : ''}
+                            ${trade.action === 'cash' ? 'Cash position' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function filterMemories(agentId) {
+            const searchTerm = document.getElementById('memorySearch').value.toLowerCase();
+            const sortOrder = document.getElementById('memorySortOrder').value;
+            let memories = window.agentMemories || [];
+            
+            // Filter memories
+            const filtered = memories.filter(m => 
+                m.situation.toLowerCase().includes(searchTerm) ||
+                m.market_regime.toLowerCase().includes(searchTerm) ||
+                m.factor_used.toLowerCase().includes(searchTerm) ||
+                m.month.toLowerCase().includes(searchTerm)
+            );
+            
+            // Sort if needed (renderMemoriesTimeline groups and sorts internally, but this affects the grouping)
+            if (sortOrder === 'oldest') {
+                // Will be reversed by the timeline renderer, so we sort newest first here
+                filtered.sort((a, b) => b.month.localeCompare(a.month));
+            }
+            
+            document.getElementById('memoriesContainer').innerHTML = renderMemoriesTimeline(filtered);
+        }
+
+
+        function renderFeedback(feedbackList) {
+            if (feedbackList.length === 0) {
+                return '<p style="color: #666; text-align: center; padding: 20px;">No feedback yet. Manager will provide guidance after deployment phase.</p>';
+            }
+            return feedbackList.slice().reverse().map(feedback => `
+                <div style="padding: 15px; margin-bottom: 10px; background: #f9f9f9; border-radius: 5px; border-left: 4px solid #667eea;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em; color: #666;">
+                        <span><strong>Month:</strong> ${feedback.month}</span>
+                        <span><strong>Rank:</strong> #${feedback.rank}</span>
+                    </div>
+                    <div style="color: #333; line-height: 1.6;">${feedback.feedback}</div>
+                </div>
+            `).join('');
+        }
+        
+        function filterFeedback(agentId) {
+            const searchTerm = document.getElementById('feedbackSearch').value.toLowerCase();
+            const feedbackList = window.agentFeedback || [];
+            
+            const filtered = feedbackList.filter(f => 
+                f.month.toLowerCase().includes(searchTerm) ||
+                f.feedback.toLowerCase().includes(searchTerm)
+            );
+            
+            document.getElementById('feedbackContainer').innerHTML = renderFeedback(filtered);
+        }
+        
+        function renderNotesHistory(historyList) {
+            if (historyList.length === 0) {
+                return '<p style="color: #666; text-align: center; padding: 20px;">No notes history yet. Strategy notes will be updated every 6 months during backtest.</p>';
+            }
+            return historyList.slice().reverse().map(note => `
+                <div style="padding: 20px; margin-bottom: 15px; background: #f9f9f9; border-radius: 8px; border-left: 5px solid #764ba2;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.9em; color: #666;">
+                        <span style="font-weight: 600; color: #667eea;">📅 ${note.month}</span>
+                        <span><strong>Version:</strong> ${note.version}</span>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 5px; white-space: pre-wrap; font-family: monospace; font-size: 0.9em; line-height: 1.6; color: #333; max-height: 400px; overflow-y: auto;">${note.notes}</div>
+                </div>
+            `).join('');
+        }
+        
+        function filterNotesHistory(agentId) {
+            const searchTerm = document.getElementById('notesHistorySearch').value.toLowerCase();
+            const historyList = window.agentNotesHistory || [];
+            
+            const filtered = historyList.filter(n => 
+                n.month.toLowerCase().includes(searchTerm) ||
+                n.notes.toLowerCase().includes(searchTerm)
+            );
+            
+            document.getElementById('notesHistoryContainer').innerHTML = renderNotesHistory(filtered);
+        }
+        
+        function filterMemoriesByFactor(agentId, factor) {
+            const memories = window.agentMemories || [];
+            
+            const filtered = factor === 'all' 
+                ? memories 
+                : memories.filter(m => m.factor_used === factor);
+            
+            document.getElementById('memoriesContainer').innerHTML = renderMemories(filtered);
+        }
+        
+        function filterTrades(agentId) {
+            const searchTerm = document.getElementById('tradeSearch').value.toLowerCase();
+            const actionFilter = document.getElementById('tradeActionFilter').value;
+            const sortOrder = document.getElementById('tradeSortOrder').value;
+            const trades = window.agentTrades || [];
+            
+            let filtered = trades.filter(t => 
+                t.month.toLowerCase().includes(searchTerm) ||
+                t.factor_choice.toLowerCase().includes(searchTerm) ||
+                t.stocks_long.some(s => s.toLowerCase().includes(searchTerm)) ||
+                t.stocks_short.some(s => s.toLowerCase().includes(searchTerm))
+            );
+            
+            if (actionFilter !== 'all') {
+                filtered = filtered.filter(t => t.action === actionFilter);
+            }
+            
+            // Sort
+            if (sortOrder === 'best') {
+                filtered.sort((a, b) => b.return_pct - a.return_pct);
+            } else if (sortOrder === 'worst') {
+                filtered.sort((a, b) => a.return_pct - b.return_pct);
+            }
+            // 'recent' is already in order
+            
+            document.getElementById('tradesContainer').innerHTML = renderTrades(filtered);
+        }
+    </script>
+</body>
+</html>
